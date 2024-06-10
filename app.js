@@ -1,11 +1,28 @@
-import express from 'express'
+import express from 'express';
+import cors from 'cors'; // Import CORS middleware
+import cookieParser from 'cookie-parser';
+import authRoute from './routes/auth.route.js';
+import connectDB from './db.js';
+import { configDotenv } from 'dotenv';
 
-const app = express()
+// Load environment variables from .env file
+configDotenv();
 
-app.use("/",(req,res)=>{
-    console.log("Hi")
-})
+const app = express();
 
-app.listen(8800,()=>{
+connectDB();
+
+app.use(cors({
+    origin:process.env.CLIENT_URL,
+    credentials:true
+}));
+
+app.use(express.json());
+
+app.use(cookieParser());
+
+app.use("/api/auth", authRoute);
+
+app.listen(8800, () => {
     console.log("Server is running on 8800");
-})
+});
