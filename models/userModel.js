@@ -28,6 +28,10 @@ const userSchema = new mongoose.Schema({
         required: true,
         enum: ['Student', 'Property Owner'],
         default: 'Student'
+    },
+    avatar: {
+        type: String, // URL or file path to the avatar image
+        default: ''   // Default value can be an empty string or a default image URL
     }
 }, {
     timestamps: true

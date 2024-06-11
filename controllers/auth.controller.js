@@ -70,11 +70,14 @@ export const login = [
                     { expiresIn: '7d' }
                 );
 
+                // Extract only the necessary information
+                const { id, username, avatar, email } = user;
+
                 res.cookie('token', token, {
                     httpOnly: true,
                     secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
                     maxAge: age,
-                }).status(200).send('User authenticated successfully');
+                }).status(200).json({ id, username, avatar, email });
             } else {
                 res.status(401).send('Authentication failed: Incorrect password');
             }
