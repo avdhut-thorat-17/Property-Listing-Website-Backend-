@@ -1,96 +1,75 @@
-import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
-import User from '../models/userModel.js';
-import { body, validationResult } from 'express-validator';
-import dotenv from 'dotenv';
-dotenv.config();
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import prisma from "../lib/prisma.js";
 
-const saltRounds = 10;
+export const register = async (req, res) => {
+  const { username, email, password } = req.body;
 
-export const register = [
-    body('username').trim().isLength({ min: 3 }).escape(),
-    body('password').isLength({ min: 6 }).escape(),
-    body('email').isEmail().normalizeEmail(),
-    body('phone').trim().isLength({ min: 10 }).escape(),
-    body('role').trim().isIn(['Student', 'Property Owner']).escape(), // Add validation for role
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = await prisma.user.create({
+      data: {
+        username,
+        email,
+        password: hashedPassword,
+      },
+    });
 
-    async (req, res) => {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
-        }
+    res.status(201).json({ message: "User created successfully" });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Failed to create user!" });
+  }
+};
+export const login = async (req, res) => {
+  const { username, password } = req.body;
 
-        const { username, password, email, phone, role } = req.body;
+  console.log("Received login request:", req.body); // Log received data
 
-        try {
-            const hashedPassword = await bcrypt.hash(password, saltRounds);
+  try {
+    const user = await prisma.user.findUnique({
+      where: { username },
+    });
 
-            const user = new User({
-                username,
-                password: hashedPassword,
-                email,
-                phone,
-                role, // Include role in the user creation
-            });
-
-            await user.save();
-            res.status(201).send('User Registered Successfully!');
-        } catch (err) {
-            console.error(err);
-            res.status(500).send('Error registering user');
-        }
+    if (!user) {
+      console.log("User not found");
+      return res.status(400).json({ message: "Invalid Credentials!" });
     }
-];
 
-export const login = [
-    body('username').trim().isLength({ min: 3 }).escape(),
-    body('password').isLength({ min: 6 }).escape(),
+    const isPasswordValid = await bcrypt.compare(password, user.password);
 
-    async (req, res) => {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
-        }
-
-        const { username, password } = req.body;
-
-        try {
-            const user = await User.findOne({ username });
-            if (!user) {
-                return res.status(401).send('Authentication failed: User not found');
-            }
-
-            const isMatch = await bcrypt.compare(password, user.password);
-            if (isMatch) {
-                const age = 1000 * 60 * 60 * 24 * 7; // 1 week
-
-                const token = jwt.sign(
-                    { id: user.id },
-                    process.env.JWT_SECRET_KEY,
-                    { expiresIn: '7d' }
-                );
-
-                // Extract only the necessary information
-                const { id, username, avatar, email } = user;
-
-                res.cookie('token', token, {
-                    httpOnly: true,
-                    secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
-                    maxAge: age,
-                }).status(200).json({ id, username, avatar, email });
-            } else {
-                res.status(401).send('Authentication failed: Incorrect password');
-            }
-        } catch (err) {
-            console.error('Error during login:', err);
-            res.status(500).send('Server error');
-        }
+    if (!isPasswordValid) {
+      console.log("Invalid password");
+      return res.status(400).json({ message: "Invalid Credentials!" });
     }
-];
+
+    const age = 1000 * 60 * 60 * 24 * 7;
+
+    const token = jwt.sign(
+      {
+        id: user.id,
+        isAdmin: false,
+      },
+      process.env.JWT_SECRET_KEY,
+      { expiresIn: age }
+    );
+
+    const { password: userPassword, ...userInfo } = user;
+
+    res
+      .cookie("token", token, {
+        httpOnly: true,
+        maxAge: age,
+      })
+      .status(200)
+      .json(userInfo);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Failed to login!" });
+  }
+};
+
 
 export const logout = (req, res) => {
-    res.clearCookie('token', {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
-    }).status(200).send('User logged out successfully');
+  res.clearCookie("token").status(200).json({ message: "Logout Successful" });
 };

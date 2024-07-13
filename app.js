@@ -1,34 +1,27 @@
-import express from 'express';
-import cors from 'cors'; // Import CORS middleware
-import cookieParser from 'cookie-parser';
-import authRoute from './routes/auth.route.js';
-import testRoute from './routes/test.route.js';
-import userRoute from './routes/user.route.js';
-import connectDB from './db.js';
-import { configDotenv } from 'dotenv';
-
-// Load environment variables from .env file
-configDotenv();
-
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import cookieParser from "cookie-parser";
+import authRoute from "./routes/auth.route.js";
+import postRoute from "./routes/post.route.js";
+import testRoute from "./routes/test.route.js";
+import userRoute from "./routes/user.route.js";
+import chatRoute from "./routes/chat.route.js";
+import messageRoute from "./routes/message.route.js";
+dotenv.config();
 const app = express();
-
-connectDB();
-
-app.use(cors({
-    origin:process.env.CLIENT_URL,
-    credentials:true
-}));
-
-app.use(express.json());
-
+// console.log("Database URL:", process.env.DATABASE_URL);
+app.use(cors({ origin: process.env.CLIENT_URL, credentials: true }));
+app.use(express.json()); // Ensure JSON body parsing
 app.use(cookieParser());
 
 app.use("/api/auth", authRoute);
-
-app.use("/api/test",testRoute);
-
-app.use("/api/user",userRoute);
+app.use("/api/users", userRoute);
+app.use("/api/posts", postRoute);
+app.use("/api/test", testRoute);
+app.use("/api/chats", chatRoute);
+app.use("/api/messages", messageRoute);
 
 app.listen(8800, () => {
-    console.log("Server is running on 8800");
+  console.log("Server is running!");
 });
