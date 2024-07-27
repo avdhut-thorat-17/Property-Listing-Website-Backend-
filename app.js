@@ -10,7 +10,7 @@ import chatRoute from "./routes/chat.route.js";
 import messageRoute from "./routes/message.route.js";
 dotenv.config();
 const app = express();
-// console.log("Database URL:", process.env.DATABASE_URL);
+
 app.use(cors({ origin: process.env.CLIENT_URL, credentials: true }));
 app.use(express.json()); // Ensure JSON body parsing
 app.use(cookieParser());
@@ -21,6 +21,13 @@ app.use("/api/posts", postRoute);
 app.use("/api/test", testRoute);
 app.use("/api/chats", chatRoute);
 app.use("/api/messages", messageRoute);
+
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  if (!res.headersSent) {
+    res.status(500).json({ error: "Something went wrong!" });
+  }
+});
 
 app.listen(8800, () => {
   console.log("Server is running!");

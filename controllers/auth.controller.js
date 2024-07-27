@@ -16,11 +16,14 @@ export const register = async (req, res) => {
     });
 
     res.status(201).json({ message: "User created successfully" });
+    return;
   } catch (err) {
     console.log(err);
     res.status(500).json({ message: "Failed to create user!" });
+    return;
   }
 };
+
 export const login = async (req, res) => {
   const { username, password } = req.body;
 
@@ -33,14 +36,16 @@ export const login = async (req, res) => {
 
     if (!user) {
       console.log("User not found");
-      return res.status(400).json({ message: "Invalid Credentials!" });
+      res.status(400).json({ message: "Invalid Credentials!" });
+      return;
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
       console.log("Invalid password");
-      return res.status(400).json({ message: "Invalid Credentials!" });
+      res.status(400).json({ message: "Invalid Credentials!" });
+      return;
     }
 
     const age = 1000 * 60 * 60 * 24 * 7;
@@ -63,13 +68,15 @@ export const login = async (req, res) => {
       })
       .status(200)
       .json(userInfo);
+    return;
   } catch (err) {
     console.log(err);
     res.status(500).json({ message: "Failed to login!" });
+    return;
   }
 };
 
-
 export const logout = (req, res) => {
   res.clearCookie("token").status(200).json({ message: "Logout Successful" });
+  return;
 };
